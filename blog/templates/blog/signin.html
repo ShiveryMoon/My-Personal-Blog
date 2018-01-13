@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="{% static 'blog/js/axios.js' %}"></script>
+    <script src="{% static 'blog/js/jquery.js' %}"></script>
+    <script src="{% static 'blog/js/vue.js' %}"></script>
+    <script src="{% static 'blog/js/js.cookie.js' %}"></script>
+    <script>
+        $(function () {
+            var vm = new Vue({
+                delimiters: ['${', '}'],
+                el: '#vm',
+                data: {
+                    username: '',
+                    password: '',
+                    info: ''
+                },
+                methods: {
+                    submit: function (event){
+                        event.preventDefault();
+                        var formData = new FormData();
+                        formData.append('username', this.username);
+                        formData.append('password', this.password);
+                        axios({
+                            method: 'post',
+                            url: '/api/authenticate/',
+                            data: formData,
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                'X-CSRFToken': Cookies.get('csrftoken')
+                            }
+                        }).then(function (response) {
+                            if (response.data){
+                                vm.info = response.data.result;
+                            } else{
+                                location.assign('/blog/');
+                            }
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+                    }
+                }
+            })
+        })
+    </script>
+</head>
+<body>
+    <form id="vm" @submit="submit($event)">
+        <p>${ info }</p>
+        <label for="id_username">Username:</label>
+        <input v-model='username' type="text" name="username" id="id_username" maxlength="150" required><br>
+
+        <label for="id_password">Password:</label>
+        <input v-model="password" type="password" name="password" id="id_password" maxlength="128" required><br>
+
+        <input type="submit" value="Login">
+    </form>
+</body>
+</html>

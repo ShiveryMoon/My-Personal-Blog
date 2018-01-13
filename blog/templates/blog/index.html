@@ -1,0 +1,129 @@
+{% extends 'blog/base.html' %}
+
+
+{% block title %} SMOON的个人博客 {% endblock title %}
+
+
+{% block header %}
+<header id="gtco-header" class="gtco-cover" role="banner" data-stellar-background-ratio="0.5" style="background-image: url({{ blogList.0.picture }});">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-7 text-left">
+                <div class="display-t">
+                    <div class="display-tc animate-box" data-animate-effect="fadeInUp">
+                        <span class="date-post">{{ blogList.0.pub_date }}</span>
+                        <h1 class="mb30"><a href="/blog/{{ blogList.0.id }}">{{ blogList.0.title }}</a></h1>
+                        <p><a href="/blog/{{ blogList.0.id }}" class="text-link">Read More</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+{% endblock header %}
+
+
+{% block main %}
+<div id="gtco-main">
+    <div class="container">
+        <div class="row row-pb-md">
+            <div class="col-md-12">
+                <ul id="gtco-post-list">
+                    {% for blog in blogList %}
+                    <li class="entry {{ blog.style }} animate-box post-entry" data-animate-effect="fadeIn">
+                        <a href="/blog/{{ blog.id }}">
+                            <div class="entry-img" style="background-image: url({{ blog.picture }});"></div>
+                            <div class="entry-desc">
+                                <div class="entry-desc-author">
+                                    <object>
+                                        <a href="/blog/profile/?id={{ blog.authorId }}">
+                                            <img class="img-circle" src="{{ blog.authorAvatar }}" height="45" width="45">
+                                            <span style="color: black;">&nbsp;{{ blog.authorName }}</span>
+                                        </a>
+                                    </object>
+                                    <span style="color: #aeaeae"> · {{ blog.pub_date }}</span>
+                                </div>
+                                <h3>{{ blog.title }}</h3>
+                                <p>{{ blog.summary }}</p>
+                            </div>
+                        </a>
+                        <div class="post-meta">
+                            {% for topic in blog.topicList %}
+                            <span class="label label-{{ topic.0 }}">{{ topic.1 }}</span>
+                            {% endfor %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if page.has_previous %}
+                            <li>
+                                <a href="/blog/?page={{ page.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% for num in page.paginator.page_range %}
+                            {% if num == page.number %}
+                                <li class="active"><a href="/blog/?page={{ num }}">{{ num }}</a></li>
+                            {% else %}
+                                <li><a href="/blog/?page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page.has_next %}
+                            <li>
+                                <a href="/blog/?page={{ page.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main %}
+
+
+{% block footer %}
+<footer id="gtco-footer" role="contentinfo">
+    <div class="container">
+        <div class="row row-pb-md">
+            <div class="col-md-12">
+                <h3 class="footer-heading">最新发布</h3>
+            </div>
+            {% for blog in latestBlogs %}
+            <div class="col-md-4">
+                <div class="post-entry">
+                    <div class="post-img">
+                        <a href="/blog/{{ blog.id }}"><img src="{{ blog.picture.image.url }}" class="img-responsive"></a>
+                    </div>
+                    <div class="post-copy">
+                        <h4><a href="/blog/{{ blog.id }}">{{ blog.title }}</a></h4>
+                        <a href="#" class="post-meta"><span class="date-posted">{{ blog.pubDate }}</span></a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="row copyright">
+            <div class="col-md-12 text-center">
+                <p class="block"><a href="http://www.miitbeian.gov.cn">苏ICP备 17032073号-1</a>. All rights reserved.</p>
+                <ul class="gtco-social-icons">
+                    <li><a href="https://github.com/ShiveryMoon"><i class="icon-github"></i></a></li>
+                    <li><a href="https://www.w3.org/TR/html5/"><i class="icon-html-five"></i></a></li>
+                    <li><a href="https://steamcommunity.com/id/shiverymoon/"><i class="icon-steam2"></i></a></li>
+                    <li><a href="#"><i class="icon-sina-weibo"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock footer %}

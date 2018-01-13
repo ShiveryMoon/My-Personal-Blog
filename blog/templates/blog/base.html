@@ -1,0 +1,258 @@
+{% load static %}
+<!DOCTYPE HTML>
+<html>
+	<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    {% block meta %}<!-- block meta  -->{% endblock meta %}
+	<title>{% block title %} ? {% endblock title %} - ShiveryMoon的个人博客</title>
+	<meta name="description" content="Personal Blog By ShiveryMoon" />
+	<meta name="keywords" content="PersonalBlog, ShiveryMoon" />
+	<meta name="author" content="ShiveryMoon" />
+
+	<link href="https://fonts.googleapis.com/css?family=Crimson+Text:400,400i|Roboto+Mono" rel="stylesheet">
+	<link rel="stylesheet" href="{% static 'blog/css/animate.css' %}">
+	<link rel="stylesheet" href="{% static 'blog/css/icomoon.css' %}">
+	<link rel="stylesheet" href="{% static 'blog/css/bootstrap.css' %}">
+	<link rel="stylesheet" href="{% static 'blog/css/style.css' %}">
+
+    <script src="{% static 'blog/js/jquery.js' %}"></script>
+	<script src="{% static 'blog/js/modernizr-2.6.2.min.js' %}"></script>
+	<script src="{% static 'blog/js/axios.js' %}"></script>
+    <script src="{% static 'blog/js/vue.js' %}"></script>
+    <script src="{% static 'blog/js/js.cookie.js' %}"></script>
+	<script src="{% static 'blog/js/jquery.easing.1.3.js' %}"></script>
+	<script src="{% static 'blog/js/bootstrap.min.js' %}"></script>
+	<script src="{% static 'blog/js/jquery.waypoints.min.js' %}"></script>
+	<script src="{% static 'blog/js/jquery.stellar.min.js' %}"></script>
+	<script src="{% static 'blog/js/main.js' %}"></script>
+
+    <script type="text/javascript" src="http://cdn.webfont.youziku.com/wwwroot/js/wf/youziku.api.min.js"></script>
+    <script type="text/javascript">
+       $youziku.load("body", "f01aef9746b146788ac4c17d69348c8e", "Source-Han-Light");
+       $youziku.draw();
+    </script>
+
+    <script>
+        $(function () {
+            var vm1 = new Vue({
+                delimiters: ['${', '}'],
+                el: '#vm1',
+                data: {
+                    username: '',
+                    password: '',
+                    showError: false,
+                    isSuccess: false,
+                    info: ''
+                },
+                methods: {
+                    trigger: function (event){
+                        $('#hiddenSubmit_login').trigger("click");
+                    },
+                    submit: function (event){
+                        event.preventDefault();
+                        var formData = new FormData();
+                        formData.append('username', this.username);
+                        formData.append('password', this.password);
+                        axios({
+                            method: 'post',
+                            url: '/api/authenticate/',
+                            data: formData,
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                'X-CSRFToken': Cookies.get('csrftoken')
+                            }
+                        }).then(function (response) {
+                            if (response.data){
+                                vm1.showError = true;
+                                vm1.info = response.data.result;
+                            } else{
+                                vm1.showError = false;
+                                vm1.isSuccess = true;
+                                location.assign('/blog/');
+                            }
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+                    }
+                }
+            });
+            var vm2 = new Vue({
+                delimiters: ['${', '}'],
+                el: '#vm2',
+                data: {
+                    username: '',
+                    password: '',
+                    password2: '',
+                    showError: false,
+                    isSuccess: false,
+                    info: ''
+                },
+                methods: {
+                    trigger: function (event) {
+                        $('#hiddenSubmit_register').trigger('click');
+                    },
+                    submit: function (event) {
+                        event.preventDefault();
+                        if (this.password !== this.password2) {
+                            this.showError = true;
+                            this.info = '两次密码输入不一致';
+                            return ;
+                        }
+                        var formData = new FormData();
+                        formData.append('username', this.username);
+                        formData.append('password', this.password);
+                        axios({
+                            method: 'post',
+                            url: '/api/users/',
+                            data: formData,
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                'X-CSRFToken': Cookies.get('csrftoken')
+                            }
+                        }).then(function (response) {
+                            if (response.data){
+                                vm2.showError = true;
+                                vm2.info = response.data.username[0];
+                            } else{
+                                vm2.showError = false;
+                                vm2.isSuccess = true;
+                                location.assign('/blog/');
+                            }
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+                    }
+                }
+            });
+        })
+    </script>
+
+	{% block beforehead %}<!-- before head  -->{% endblock beforehead %}
+
+	</head>
+	<body>
+		
+        <div class="gtco-loader"></div>
+
+        <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel">
+            <div class="modal-dialog modal-sm" role="document">
+                <div id="vm1" class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="loginModalLabel">欢迎登录!</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="submit($event)">
+                            <p v-if="!showError"></p>
+                            <div v-if='showError' class="form-group form-group-sm alert alert-danger" role="alert">
+                                ${ info }
+                            </div>
+                            <div class="form-group form-group-sm has-feedback" :class="{ 'has-success': isSuccess }">
+                                <input v-model="username" type="text" class="form-control" id="id_username_login" placeholder="用户名" maxlength="150" required>
+                                <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                            </div>
+                            <div class="form-group form-group-sm has-feedback" :class="{ 'has-success': isSuccess }">
+                                <input v-model="password" type='password' class="form-control" id="id_password_login" placeholder="密码" maxlength="128" required>
+                                <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                            </div>
+                            <div class="form-group form-group-sm">
+                                <input id='hiddenSubmit_login' type="submit" class="sr-only">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button @click='trigger' type="button" class="btn btn-default">登录</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="registerModal" tabindex="-1" role="dialog" aria-labelledby="registerModalLabel">
+            <div class="modal-dialog modal-sm" role="document">
+                <div id="vm2" class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="loginModalLabel">欢迎注册!</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="submit($event)">
+                            <p v-if="!showError"></p>
+                            <div v-if="showError" class="form-group form-group-sm alert alert-danger" role="alert">
+                                ${ info }
+                            </div>
+                            <div class="form-group form-group-sm has-feedback" :class="{ 'has-success': isSuccess }">
+                                <input v-model="username" type="text" class="form-control" id="id_username_register" placeholder="用户名" maxlength="150" required>
+                                <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                            </div>
+                            <div class="form-group form-group-sm has-feedback" :class="{ 'has-success': isSuccess }">
+                                <input v-model="password" type='password' class="form-control" id="id_password_register" placeholder="密码" maxlength="128" required>
+                                <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                            </div>
+                            <div class="form-group form-group-sm has-feedback" :class="{ 'has-success': isSuccess }">
+                                <input v-model="password2" type='password' class="form-control" id="id_password2_register" placeholder="确认密码" maxlength="128" required>
+                                <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                            </div>
+                            <div class="form-group form-group-sm">
+                                <input id='hiddenSubmit_register' type="submit" class="sr-only">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button @click="trigger" type="button" class="btn btn-default">注册</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page">
+            <nav class="gtco-nav" role="navigation">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-xs-2 text-left">
+                            <div id="gtco-logo"><a href="index.html">SMOON<span>.</span></a></div>
+                        </div>
+                        <div class="col-xs-10 text-right menu-1">
+                            <ul>
+                                {% if user.is_authenticated %}
+                                <li><a href="/blog/profile/manageAvatar/"><img class="entry-img img-circle" src="{{ user.avatar.url }}" height="40" width="40"></a></li>
+                                <li class="has-dropdown">
+                                    <a href="#" style="text-transform: none">{{ user.username }}</a>
+                                    <ul class="dropdown">
+                                        <li><a href="/blog/profile/?id={{ user.id }}"><i class="icon-user"></i>  个人资料</a></li>
+                                        <li><a href="/blog/profile/managePwd/"><i class="icon-key"></i>  密码管理</a></li>
+                                        <li><a href="/blog/profile/manageAvatar/"><i class="icon-smile"></i>  头像管理</a></li>
+                                        <li><a href="/blog/signout/"><i class="icon-exit"></i>  登出</a></li>
+                                    </ul>
+                                </li>
+                                {% else %}
+                                    <li><a href="#loginModal" data-toggle="modal"><i style="font-size: 15px" class="icon-enter">登录</i></a></li>
+                                    <li><a href="#registerModal" data-toggle="modal"><i style="font-size: 15px" class="icon-user-tie">注册</i></a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            {% block header %}{% endblock header %}
+
+
+            {% block main %}{% endblock main %}
+
+
+            {% block maine %}{% endblock maine %}
+
+
+            {% block footer %}{% endblock footer %}
+
+        </div>
+
+        <div class="gototop js-top">
+            <a href="#" class="js-gotop"><i class="icon-arrow-up"></i></a>
+        </div>
+
+	</body>
+</html>
+
