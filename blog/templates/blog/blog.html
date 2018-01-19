@@ -1,0 +1,167 @@
+{% extends 'blog/base.html' %}
+
+
+{% block title %} {{ blog.title }} {% endblock title %}
+
+
+{% block beforehead %}
+<script>
+$(function () {
+    var blogId = '{{ blog.id }}';
+    var commentVM = new Vue({
+        delimiters: ['${', '}'],
+        el: '#commentVM',
+        data: {
+            content: ''
+        },
+        methods: {
+            submit: function (event){
+                event.preventDefault();
+                var formData = new FormData();
+                formData.append('content', this.content);
+                axios({
+                    method: 'post',
+                    url: '/api/blogs/' + blogId + '/comments/',
+                    data: formData,
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'X-CSRFToken': Cookies.get('csrftoken')
+                    }
+                }).then(function (response) {
+                    if (response.data){
+                        console.log(response.data);
+                    } else{
+                        location.reload();
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            }
+        }
+    })
+})
+</script>
+{% endblock beforehead %}
+
+
+{% block header %}
+<header id="gtco-header" class="gtco-cover" role="banner" style="background-image:url({{ blog.picture.image.url }});" data-stellar-background-ratio="0.5">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-7 text-left">
+                <div class="display-t">
+                    <div class="display-tc animate-box" data-animate-effect="fadeInUp">
+                        <span class="date-post">{{ blog.pubDate }}</span>
+                        <h1 class="mb30"><a href="#">{{ blog.title }}</a></h1>
+                        <p>by <a href="{% url 'blog:profile' %}?id={{ blog.author.id }}" class="text-link">{{ blog.author.username }}</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+{% endblock header %}
+
+
+{% block main %}
+<div id="gtco-maine">
+    <div class="container">
+        <div class="row row-pb-md">
+            <div class="col-md-12">
+                <article class="mt-negative">
+                    <div class="text-left content-article">
+                        <div class="row row-pb-lg">
+                            <div style="font-size: 17px" class="col-lg-8 cp-r animate-box">
+                                {{ blog.content|safe }}
+                            </div>
+                            <div class="col-lg-4 animate-box">
+                                <div class="gtco-highlight right">
+                                    <a href="{% url 'blog:profile' %}?id={{ blog.author.id }}" style="padding: 0 0 20px 56px">
+                                        <img class="img-circle" src="{{ blog.author.avatar.url }}" height="150" width="150">
+                                    </a>
+                                    <a href="{% url 'blog:profile' %}?id={{ blog.author.id }}" style="text-decoration:none;"><h5>{{ blog.author.username }}</h5></a>
+                                    <p>发表于 {{ blog.pubDate }}</p>
+                                    <div class="topic">
+                                        {% for topic in blog.topicList %}
+                                        <span class="label label-{{ topic.0 }}">{{ topic.1 }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row row-pb-sm">
+                            <div class="col-lg-8 cp-r animate-box">
+                                <hr>
+                                {% if user.is_authenticated %}
+                                    <h3>发表评论</h3>
+                                    <form id="commentVM" @submit="submit($event)">
+                                        <div class="form-group">
+                                            <label for="id_comment" style="padding: 0 0 10px 1px;font-size: 16px;"><a href="#"><img class="img-circle" src="{{ user.avatar.url }}" height="47" width="47">&nbsp;&nbsp;{{ user.username }}</a></label>
+                                            <textarea v-model="content" id="id_comment" class="form-control" rows="3" placeholder="请输入评论:"></textarea>
+                                            <p></p>
+                                            <button type="submit" class="btn btn-default">发表评论</button>
+                                        </div>
+                                    </form>
+                                    <hr>
+                                {% endif %}
+                                <div id="commentList">
+                                    <h3>评论列表</h3>
+                                </div>
+                                <ul class="media-list">
+                                    {% if comments %}
+                                        {% for comment in comments %}
+                                        <li class="media">
+                                            <div class="media-left" style="padding: 0 30px 0 0">
+                                                <a href="{% url 'blog:profile' %}?id={{ comment.reviewer.id }}"><img class="media-object img-circle" src="{{ comment.reviewer.avatar.url }}" height="60" width="60"></a>
+                                            </div>
+                                            <div class="media-body">
+                                                <h4 class="media-heading"><a href="{% url 'blog:profile' %}?id={{ comment.reviewer.id }}">{{ comment.reviewer.username }}</a></h4>
+                                                <p style="font-size: 16px;padding: 5px 0 0 0">{{ comment.content }}</p>
+                                                <span>{{ comment.pubDate }}</span><p style="position: absolute; padding: 0 0 0 550px; font-size: 12px">#{{ comment.floor }}</p>
+                                            </div>
+                                            <hr>
+                                        </li>
+                                        {% endfor %}
+                                        <div class="row">
+                                            <div class="text-center">
+                                                <nav aria-label="Page navigation">
+                                                    <ul class="pagination">
+                                                        {% if page.has_previous %}
+                                                            <li>
+                                                                <a href="{% url 'blog:blog' blog.id %}?page={{ page.previous_page_number }}#commentList" aria-label="Previous">
+                                                                    <span aria-hidden="true">&laquo;</span>
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                        {% for num in page.paginator.page_range %}
+                                                            {% if num == page.number %}
+                                                                <li class="active"><a href="{% url 'blog:blog' blog.id %}?page={{ num }}#commentList">{{ num }}</a></li>
+                                                            {% else %}
+                                                                <li><a href="{% url 'blog:blog' blog.id %}?page={{ num }}#commentList">{{ num }}</a></li>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        {% if page.has_next %}
+                                                            <li>
+                                                                <a href="{% url 'blog:blog' blog.id %}?page={{ page.next_page_number }}#commentList" aria-label="Next">
+                                                                    <span aria-hidden="true">&raquo;</span>
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </nav>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <p>&nbsp;&nbsp;还没有评论...</p>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main %}

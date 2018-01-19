@@ -131,4 +131,4 @@ MEDIA_URL = '/static/blog/images/'
 
 MEDIA_ROOT = 'D:/计算机学习/Myblog/blog/static/blog/images/' #部署时记得改！
 
-LOGIN_URL = '/signin/'
+LOGIN_URL = '/admin/login/'

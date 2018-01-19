@@ -80,8 +80,8 @@ class Blog(models.Model):
     title = models.CharField(max_length=100)
     summary = models.CharField(max_length=300)
     content = models.TextField()
-    user_like = models.TextField(blank=True, null=True)
     pub_date = models.DateTimeField('date published the blog')
+    commentsNum = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = 'Blogs'
@@ -96,15 +96,19 @@ class Comment(models.Model):
     blog = models.ForeignKey(Blog, on_delete=models.CASCADE)
     content = models.TextField()
     pub_date = models.DateTimeField('date published the comment')
+    floor = models.IntegerField(default=1)
 
     class Meta:
         verbose_name = 'Comments'
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return 'Comment by ' + self.reviewer.username
+        return 'Comment by ' + self.reviewer.username + ' in ' + self.blog.title
 
     def save(self, *args, **kwargs):
+        self.blog.commentsNum += 1
+        self.blog.save()
+        self.floor = self.blog.commentsNum
         self.pub_date = timezone.now()
         super(Comment, self).save(*args, **kwargs)
 

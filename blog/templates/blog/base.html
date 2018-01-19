@@ -17,10 +17,10 @@
 	<link rel="stylesheet" href="{% static 'blog/css/bootstrap.css' %}">
 	<link rel="stylesheet" href="{% static 'blog/css/style.css' %}">
 
-    <script src="{% static 'blog/js/jquery.js' %}"></script>
+    <script src="{% static 'blog/js/jquery.min.js' %}"></script>
 	<script src="{% static 'blog/js/modernizr-2.6.2.min.js' %}"></script>
-	<script src="{% static 'blog/js/axios.js' %}"></script>
-    <script src="{% static 'blog/js/vue.js' %}"></script>
+	<script src="{% static 'blog/js/axios.min.js' %}"></script>
+    <script src="{% static 'blog/js/vue.min.js' %}"></script>
     <script src="{% static 'blog/js/js.cookie.js' %}"></script>
 	<script src="{% static 'blog/js/jquery.easing.1.3.js' %}"></script>
 	<script src="{% static 'blog/js/bootstrap.min.js' %}"></script>
@@ -70,7 +70,7 @@
                             } else{
                                 vm1.showError = false;
                                 vm1.isSuccess = true;
-                                location.assign('/blog/');
+                                location.reload();
                             }
                         }).catch(function (error) {
                             console.log(error);
@@ -118,7 +118,7 @@
                             } else{
                                 vm2.showError = false;
                                 vm2.isSuccess = true;
-                                location.assign('/blog/');
+                                location.reload();
                             }
                         }).catch(function (error) {
                             console.log(error);
@@ -163,7 +163,7 @@
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button @click='trigger' type="button" class="btn btn-default">登录</button>
+                        <button @keyup.enter='trigger' @click="trigger" type="button" class="btn btn-default">登录</button>
                     </div>
                 </div>
             </div>
@@ -200,7 +200,7 @@
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button @click="trigger" type="button" class="btn btn-default">注册</button>
+                        <button @keyup.enter='trigger' @click="trigger" type="button" class="btn btn-default">注册</button>
                     </div>
                 </div>
             </div>
@@ -211,19 +211,33 @@
                 <div class="container">
                     <div class="row">
                         <div class="col-xs-2 text-left">
-                            <div id="gtco-logo"><a href="index.html">SMOON<span>.</span></a></div>
+                            <div id="gtco-logo"><a href="{% url 'blog:index' %}">SMOON<span>.</span></a></div>
                         </div>
                         <div class="col-xs-10 text-right menu-1">
                             <ul>
+                                <li class="has-dropdown">
+                                    <a href="#">Category&nbsp;&nbsp;</a>
+                                    <ul class="dropdown">
+                                        <li><a href="{% url 'blog:category' 'python' %}">Python</a></li>
+                                        <li><a href="{% url 'blog:category' 'algorithm' %}">Algorithm</a></li>
+                                        <li><a href="{% url 'blog:category' 'webFront' %}">Web Front</a></li>
+                                        <li><a href="{% url 'blog:category' 'javascript' %}">Javascript</a></li>
+                                        <li><a href="{% url 'blog:category' 'others' %}">Others</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="https://github.com/ShiveryMoon/My-Personal-Blog" target="_blank">Source&nbsp;&nbsp;</a></li>
+                                {% if user.is_superuser %}
+                                <li><a href="/admin/" target="_blank">Admin&nbsp;&nbsp;&nbsp;&nbsp;</a></li>
+                                {% endif %}
                                 {% if user.is_authenticated %}
-                                <li><a href="/blog/profile/manageAvatar/"><img class="entry-img img-circle" src="{{ user.avatar.url }}" height="40" width="40"></a></li>
+                                <li><a href="{% url 'blog:profile' %}?id={{ user.id }}"><img class="entry-img img-circle" src="{{ user.avatar.url }}" height="40" width="40"></a></li>
                                 <li class="has-dropdown">
                                     <a href="#" style="text-transform: none">{{ user.username }}</a>
                                     <ul class="dropdown">
-                                        <li><a href="/blog/profile/?id={{ user.id }}"><i class="icon-user"></i>  个人资料</a></li>
-                                        <li><a href="/blog/profile/managePwd/"><i class="icon-key"></i>  密码管理</a></li>
-                                        <li><a href="/blog/profile/manageAvatar/"><i class="icon-smile"></i>  头像管理</a></li>
-                                        <li><a href="/blog/signout/"><i class="icon-exit"></i>  登出</a></li>
+                                        <li><a href="{% url 'blog:profile' %}?id={{ user.id }}"><i class="icon-user"></i>  个人资料</a></li>
+                                        <li><a href="{% url 'blog:profile' %}?id={{ user.id }}&pos=pswd"><i class="icon-key"></i>  密码管理</a></li>
+                                        <li><a href="{% url 'blog:profile' %}?id={{ user.id }}&pos=avtr"><i class="icon-smile"></i>  头像管理</a></li>
+                                        <li><a href="{% url 'blog:signout' %}"><i class="icon-exit"></i>  登出</a></li>
                                     </ul>
                                 </li>
                                 {% else %}
@@ -242,11 +256,41 @@
             {% block main %}{% endblock main %}
 
 
-            {% block maine %}{% endblock maine %}
-
-
-            {% block footer %}{% endblock footer %}
-
+            {% block footer %}
+<footer id="gtco-footer" role="contentinfo">
+    <div class="container">
+        <div class="row row-pb-md">
+            <div class="col-md-12">
+                <h3 class="footer-heading">最新发布</h3>
+            </div>
+            {% for blog in latestBlogs %}
+            <div class="col-md-4">
+                <div class="post-entry">
+                    <div class="post-img">
+                        <a href="{% url 'blog:blog' blog.id %}"><img src="{{ blog.picture.image.url }}" class="img-responsive"></a>
+                    </div>
+                    <div class="post-copy">
+                        <h4><a href="{% url 'blog:blog' blog.id %}">{{ blog.title }}</a></h4>
+                        <a href="#" class="post-meta"><span class="date-posted">{{ blog.pubDate }}</span></a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="row copyright">
+            <div class="col-md-12 text-center">
+                <p class="block"><a href="http://www.miitbeian.gov.cn">苏ICP备 17032073号-1</a>. All rights reserved.</p>
+                <ul class="gtco-social-icons">
+                    <li><a href="https://github.com/ShiveryMoon"><i class="icon-github"></i></a></li>
+                    <li><a href="https://www.w3.org/TR/html5/"><i class="icon-html-five"></i></a></li>
+                    <li><a href="https://steamcommunity.com/id/shiverymoon/"><i class="icon-steam2"></i></a></li>
+                    <li><a href="#"><i class="icon-sina-weibo"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock footer %}
         </div>
 
         <div class="gototop js-top">

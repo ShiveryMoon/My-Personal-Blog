@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, QueryDict
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, QueryDict, HttpResponseNotFound
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
@@ -12,7 +13,6 @@ from .forms import UserRegisterForm, BlogForm, CommentForm, PictureForm, UserAva
 from .models import CustomUser, Blog, Comment, Picture, Topic
 
 import os, time, re
-from PIL import Image
 from random import randint
 
 
@@ -60,20 +60,23 @@ def _randomPair(int):
         list += pair[x]
     return list
 
-
-'''Templates'''
-
-
-class IndexView(View):
-    def get(self,request):
-        pageNum = request.GET.get('page', 1)
-        allBlogs = Blog.objects.order_by('-pub_date')
-        paginator = Paginator(allBlogs, 10)
-        page = paginator.get_page(pageNum)
-        blogs = paginator.get_page(pageNum).object_list
-        if not blogs:
-            return HttpResponse()
-        blogList = []
+def getBlogList(blogs, api=False):
+    blogList = []
+    if api:
+        for blog in blogs:
+            blogList.append({
+                'id': blog.id,
+                'authorName': blog.author.username,
+                'authorId': blog.author.id,
+                'authorAvatar': blog.author.avatar.url,
+                'title': blog.title,
+                'summary': blog.summary,
+                'picture': blog.picture.image.url,
+                'pub_date': blog.pub_date,
+                'commentsNum': blog.commentsNum,
+                'topicList': [x.topic for x in blog.topics.all()],
+            })
+    else:
         a = 0
         styleList = getStyleList(len(blogs))
         for blog in blogs:
@@ -87,9 +90,30 @@ class IndexView(View):
                 'picture': blog.picture.image.url,
                 'pub_date': timeFilter(blog.pub_date),
                 'style': styleList[a],
-                'topicList': [(x.kind, x.topic)for x in blog.topics.all()],
+                'topicList': [(x.kind, x.topic) for x in blog.topics.all()],
             })
             a += 1
+    return blogList
+
+def analysisPut(rawPut):
+    dict = {}
+    for item in rawPut:
+        list = re.split(r'[\r\n]+', item)
+        dict[list[0].strip('"')] = list[1]
+    return dict
+
+
+'''Templates'''
+
+
+class IndexView(View):
+    def get(self,request):
+        pageNum = int(request.GET.get('page', 1))
+        allBlogs = Blog.objects.order_by('-pub_date')
+        paginator = Paginator(allBlogs, 10)
+        page = paginator.get_page(pageNum)
+        blogs = page.object_list
+        blogList = getBlogList(blogs)
         latestBlogs = allBlogs[:3]
         for blog in latestBlogs:
             blog.pubDate = timeFilter(blog.pub_date)
@@ -101,42 +125,69 @@ class IndexView(View):
         })
 
 
-class SignoutView(View):
-    def get(self, request):
-        logout(request)
-        return HttpResponseRedirect('/blog/')
-
-
-class ProfileView(View):
-    def get(self, request):
-        username = request.GET.get('username')
-        user = get_object_or_404(CustomUser, username=username)
-        canEdit = request.user.username == username
-        return render(request, 'blog/profile.html', {
+class CategoryView(View):
+    def get(self, request, category):
+        pageNum = int(request.GET.get('page', 1))
+        allBlogs = Blog.objects.filter(topics__topic=category).order_by('-pub_date')
+        paginator = Paginator(allBlogs, 10)
+        page = paginator.get_page(pageNum)
+        blogs = page.object_list
+        if not blogs:
+            return HttpResponseNotFound()
+        blogList = getBlogList(blogs)
+        latestBlogs = allBlogs[:3]
+        for blog in latestBlogs:
+            blog.pubDate = timeFilter(blog.pub_date)
+        return render(request, 'blog/category.html', {
             'user': request.user,
-            'can_edit' : canEdit
+            'blogList': blogList,
+            'latestBlogs': latestBlogs,
+            'page': page,
+            'category': category
         })
 
 
 class BlogView(View):
     def get(self, request, id):
+        blog = get_object_or_404(Blog, id=id)
+        pageNum = int(request.GET.get('page', 1))
+        paginator = Paginator(blog.comment_set.all(), 6)
+        page = paginator.get_page(pageNum)
+        comments = page.object_list
+        for comment in comments:
+            comment.pubDate = timeFilter(comment.pub_date)
+        blog.pubDate = timeFilter(blog.pub_date)
+        blog.topicList = [(x.kind, x.topic) for x in blog.topics.all()]
+        latestBlogs = Blog.objects.order_by('-pub_date')[:3]
+        for lblog in latestBlogs:
+            lblog.pubDate = timeFilter(blog.pub_date)
         return render(request, 'blog/blog.html',{
-            'blog_id' : id,
-            'user': request.user
+            'user': request.user,
+            'blog': blog,
+            'latestBlogs': latestBlogs,
+            'comments': comments,
+            'page': page
         })
 
 
-class PWDChangeView(LoginRequiredMixin, View):
+class SignoutView(View):
     def get(self, request):
-        return render(request, 'blog/manage_pwd.html', {
-            'user': request.user
-        })
+        logout(request)
+        return HttpResponseRedirect(reverse('blog:index'))
 
 
-class AvatarChangeView(LoginRequiredMixin, View):
+class ProfileView(View):
     def get(self, request):
-        return render(request, 'blog/manage_avatar.html', {
-            'user': request.user
+        id = int(request.GET.get('id', 1))
+        pos = request.GET.get('pos', 'intro')
+        user = get_object_or_404(CustomUser, id=id)
+        return render(request, 'blog/profile.html', {
+            'user': request.user,
+            'inquireUsername': user.username,
+            'profileId': id,
+            'can_edit': request.user.id == id,#这是防止修改他人资料的两级保险的第一级
+            'is_admin': user.is_superuser,
+            'pos': pos
         })
 
 
@@ -173,26 +224,34 @@ class APIUserByIdView(View):
     def get(self, request, id):
         user = get_object_or_404(CustomUser, id=id)
         resp = {
-            'username' : user.username,
-            'email' : user.email,
-            'avatar' : user.avatar.url,
-            'joinDate' : user.date_joined
+            'username': user.username,
+            'desc': user.description,
+            'location': user.location,
+            'email': user.email,
+            'avatar': user.avatar.url,
+            'joinDate': re.split(r'\s+', user.date_joined.__str__())[0]
         }
         return JsonResponse(resp)
 
     @method_decorator(login_required)
     def put(self, request, id):
-        if request.user.id != id: #手动添加passes_test
+        if request.user.id != id: #这种属于手动添加passes_test， 第二级保险
             return JsonResponse({'error':'You cannot update others profile'})
         user = get_object_or_404(CustomUser, id=id)
-        put = QueryDict(request.body, encoding=request.encoding)
-        if 'username' in put:
-            user.username = put.get('username')
-            user.email = put.get('email')
-        else:  #Changing password
-            user.set_password(put.get('password'))
+        rawPut = QueryDict(request.body, encoding=request.encoding)
+        put = analysisPut(rawPut.getlist(' name', None))
+        if 'password' in put: #Changing password
+            user2 = authenticate(request, username=request.user.username, password=put.get('oldPassword', None))
+            if user2 is not None:
+                user.set_password(put.get('password'))
+            else:
+                return JsonResponse({'error': 'old password is wrong'})
+        else:
+            user.description = put.get('desc', user.description)
+            user.email = put.get('email', user.email)
+            user.location = put.get('location', user.location)
         user.save()
-        return HttpResponse()
+        return JsonResponse({'result':'Update user object successfully'})
 
     def options(self, request, *args, **kwargs): #这里可能会有问题，说不定使用默认的options就可以？
         resp = JsonResponse({'result': 'success'})
@@ -204,11 +263,16 @@ class APIUserByIdView(View):
 
 class APIChangeAvatarView(LoginRequiredMixin, View):
     def post(self, request, id):
+        if request.user.id != id:
+            return JsonResponse({'error':'You cannot update others profile'})
         user = get_object_or_404(CustomUser, id=id)
         avatarForm = UserAvatarForm(request.POST, request.FILES)
         if avatarForm.is_valid():
-            os.remove(user.avatar.path)
+            if 'default/default.jpg' not in user.avatar.path:
+                os.remove(user.avatar.path)
             user.avatar = avatarForm.cleaned_data['avatar']
+            fmt = re.split(r'\.', user.avatar.name)[-1]
+            user.avatar.name = user.username + '.%s' % fmt
             user.save()
             user.avatarToThumbtail()
             return HttpResponse()
@@ -217,32 +281,16 @@ class APIChangeAvatarView(LoginRequiredMixin, View):
 
 class APIBlogsView(View):
     def get(self, request):
-        page = request.GET.get('page',1)
+        pageNum = int(request.GET.get('page',1))
         paginator = Paginator(Blog.objects.order_by('-pub_date'), 10)
-        blogs = paginator.get_page(page).object_list
-        if not blogs:
-            return HttpResponse()
-        id, author, title, summary, picture, pub_date, topic = [],[],[],[],[],[],[]
-        styleList = getStyleList(blogs.__len__())
-        for blog in blogs:
-            id.append(blog.id)
-            author.append(blog.author.username)
-            title.append(blog.title)
-            summary.append(blog.summary)
-            picture.append(blog.picture.image.url)
-            pub_date.append(timeFilter(blog.pub_date))
-            topic.append([x.topic for x in blog.topic_set.all()])
+        page = paginator.get_page(pageNum)
+        blogs = page.object_list
+        blogList = getBlogList(blogs, api=True)
         resp = {
-            'idList': id,
-            'authorList':author,
-            'titleList':title,
-            'summaryList':summary,
-            'pictureList':picture,
-            'pubDateList':pub_date,
-            'topicList':topic,
-            'styleList':styleList,
-            'totalPage':str(paginator.num_pages),
-            'currentPage':page,
+            'blogList': blogList,
+            'currentPage': page.number,
+            'has_previous': page.has_previous(),
+            'has_next': page.has_next(),
         }
         return JsonResponse(resp)
 
@@ -250,8 +298,7 @@ class APIBlogsView(View):
 class APIBlogByIdView(View):
     def get(self, request, id):
         blog = get_object_or_404(Blog, id=id)
-        '''
-        topicList = [x.topic for x in blog.topic_set.all()]
+        topicList = [x.topic for x in blog.topics.all()]
         resp = {
             'authorName':blog.author.username,
             'authorAvatar':blog.author.avatar.url,
@@ -262,25 +309,24 @@ class APIBlogByIdView(View):
             'topicList':topicList
         }
         return JsonResponse(resp)
-        '''
+
 
 
 class APICommentsView(View):
     def get(self,request, id):
-        page = request.GET.get('page', 1)
-        paginator = Paginator(Comment.objects.filter(blog_id=id), 10)
-        comments = paginator.get_page(page)
-        reviewer, content, pub_date = [],[],[]
+        blogTitle = Blog.objects.get(id=id).title
+        comments = Comment.objects.filter(blog_id=id)
+        commentList = []
         for comment in comments:
-            reviewer.append(comment.reviewer.username)
-            content.append(comment.content)
-            pub_date.append(comment.pub_date)
+            commentList.append({
+                'user': comment.reviewer.username,
+                'content': comment.content,
+                'pubDate': comment.pub_date,
+                'floor': comment.floor
+            })
         resp={
-            'reviewerList':reviewer,
-            'contentList':content,
-            'pubDateList':pub_date,
-            'totalPage': paginator.num_pages,
-            'currentPage': page
+            'blogTitle': blogTitle,
+            'commentList': commentList
         }
         return JsonResponse(resp)
 

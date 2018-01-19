@@ -1,0 +1,336 @@
+{% extends 'blog/base.html' %}
+
+
+{% block title %} 个人资料 - SMOON的个人博客 {% endblock title %}
+
+
+{% block beforehead %}
+    <style>
+    body { background: white; }
+    </style>
+    <script>
+        function initVM(profile) {
+            intro = false;
+            pswd = false;
+            avtr = false;
+            if (pos === 'intro'){
+                intro = true;
+            }
+            if (pos === 'pswd'){
+                pswd = true;
+            }
+            if (pos === 'avtr'){
+                avtr = true;
+            }
+            var profileVM = new Vue({
+                delimiters: ['${','}'],
+                el: '#profile',
+                data: {
+                    profile: profile,
+                    modify: false,
+                    show: intro
+                },
+                methods: {
+                    canModify: function () {
+                        this.modify = true;
+                    },
+                    submit: function (event) {
+                        event.preventDefault();
+                        var formData = new FormData();
+                        formData.append('desc', this.profile.desc);
+                        formData.append('location', this.profile.location);
+                        formData.append('email', this.profile.email);
+                        axios({
+                            method:'put',
+                            url: '/api/users/' + profileId + '/',
+                            data: formData,
+                            headers:{
+                                'Content-Type': 'multipart/form-data',
+                                'X-CSRFToken': Cookies.get('csrftoken')
+                            }
+                        }).then(function (response){
+                            console.log(response.data);
+                            location.assign('{% url 'blog:profile' %}?id={{ profileId }}');
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+                    }
+                }
+            });
+            {% if can_edit %}
+            var passwordVM = new Vue({
+                delimiters: ['${','}'],
+                el: '#pwd',
+                data:{
+                    oldPassword: '',
+                    password: '',
+                    password2: '',
+                    showError: false,
+                    isSuccess: false,
+                    info: '',
+                    show: pswd
+                },
+                methods:{
+                    submit: function (event) {
+                        event.preventDefault();
+                        if (this.password !== this.password2){
+                            this.info = '两次密码输入不一致';
+                            this.showError = true;
+                            return ;
+                        }
+                        var formData = new FormData();
+                        formData.append('oldPassword', this.oldPassword);
+                        formData.append('password', this.password);
+                        axios({
+                            method:'put',
+                            url: '/api/users/' + profileId + '/',
+                            data: formData,
+                            headers:{
+                                'Content-Type': 'multipart/form-data',
+                                'X-CSRFToken': Cookies.get('csrftoken')
+                            }
+                        }).then(function (response) {
+                            if (response.data['error']) {
+                                passwordVM.info = '旧密码验证失败';
+                                passwordVM.showError = true;
+                            } else {
+                                passwordVM.showError = false;
+                                passwordVM.isSuccess = true;
+                                location.assign('{% url 'blog:index' %}');
+                            }
+                        }).catch(function (error) {
+                            console.log(error);
+                        })
+                    }
+                }
+            });
+            var avatarVM = new Vue({
+                delimiters: ['${','}'],
+                el: '#avatar',
+                data:{
+                    avatar: '',
+                    show: avtr
+                },
+                methods:{
+                    getFile: function (event){
+                      this.avatar = event.target.files[0];
+                    },
+                    submit: function (event) {
+                        event.preventDefault();
+                        var formData = new FormData();
+                        formData.append('avatar', this.avatar);
+                        axios({
+                            method: 'post',
+                            url: '/api/users/' + profileId + '/avatar/',
+                            data: formData,
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                'X-CSRFToken': Cookies.get('csrftoken')
+                            }
+                        }).then(function (response) {
+                            console.log(response.data);
+                            location.assign('{% url 'blog:profile' %}?id={{ profileId }}');
+                        }).catch(function (error) {
+                            console.log(error);
+                        })
+                    }
+                }
+            });
+            var showVM = new Vue({
+                delimiters: ['${','}'],
+                el: '#show',
+                data:{
+                    intro: intro,
+                    pswd: pswd,
+                    avtr: avtr
+                }
+            });
+            {% endif %}
+        }
+
+    </script>
+    <script>
+        $(function (){
+            profileId = '{{ profileId }}';
+            pos  = '{{ pos }}';
+            axios({
+                method: 'get',
+                url: '/api/users/' + profileId + '/'
+            }).then(function (response) {
+                console.log(response.data);
+                initVM(response.data);
+            }).catch(function (error) {
+                console.log(error);
+            })
+        })
+    </script>
+{% endblock beforehead %}
+
+
+{% block header %}
+<header id="gtco-header" class="gtco-cover gtco-cover-sm" role="banner" data-stellar-background-ratio="0.5" style="background-image: url('/static/blog/images/default/profile.jpg');">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-7 text-left">
+                <div class="display-t">
+                    <div class="display-tc animate-box" data-animate-effect="fadeInUp">
+                        {% if is_admin %}
+                        <p><span class="label label-danger" style="font-size: 15px">管理员</span></p>
+                        {% endif %}
+                        <h1 class="mb30">{{ inquireUsername }}</h1>
+                        <h2>个人资料</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+{% endblock header %}
+
+
+{% block main %}
+<div id="gtco-main">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div>
+                    <ul id="show" class="nav nav-tabs" role="tablist" style="font-size: 22px">
+                        <li role="presentation" :class="{ 'active': intro }"><a href="#profile" aria-controls="home" role="tab" data-toggle="tab">个人资料</a></li>
+                        {% if can_edit %}
+                        <li role="presentation" :class="{ 'active': pswd }"><a name="pwd" href="#pwd" aria-controls="profile" role="tab" data-toggle="tab">密码修改</a></li>
+                        <li role="presentation" :class="{ 'active': avtr }"><a href="#avatar" aria-controls="messages" role="tab" data-toggle="tab">头像修改</a></li>
+                        {% endif %}
+                    </ul>
+                    <div class="tab-content" style="font-size: 18px">
+                        <div role="tabpanel" class="col-md-8 tab-pane fade" :class="{ 'active': show, 'in': show }" id="profile">
+                            <form @submit="submit($event)" class="form-horizontal" style="padding: 50px 0 0 0;">
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">头像</label>
+                                    <div class="col-sm-10">
+                                        <p class="form-control-static"><img class="img-circle" height="150" width="150" :src="profile.avatar"></p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">用户名</label>
+                                    <div class="col-sm-10">
+                                        <p class="form-control-static">${ profile.username }</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">注册时间</label>
+                                    <div class="col-sm-10">
+                                        <p class="form-control-static">${ profile.joinDate }</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="desc" class="col-sm-2 control-label">个人简介</label>
+                                    <div class="col-sm-10">
+                                        <p v-if="!modify" class="form-control-static">${ profile.desc }</p>
+                                        <textarea v-model="profile.desc" v-if="modify" id="desc" class="form-control"></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email" class="col-sm-2 control-label">邮箱</label>
+                                    <div class="col-sm-10">
+                                        <p v-if="!modify" class="form-control-static">${ profile.email }</p>
+                                        <input v-model="profile.email" v-if="modify" id="email" class="form-control" type="email" maxlength="254">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location" class="col-sm-2 control-label">地区</label>
+                                    <div class="col-sm-10">
+                                        <p v-if="!modify" class="form-control-static">${ profile.location }</p>
+                                        <input v-model="profile.location" v-if="modify" id="location" class="form-control" type="text" maxlength="100">
+                                    </div>
+                                </div>
+                                <hr>
+                                {% if can_edit %}
+                                <div style="padding: 20px 0 0 610px">
+                                    <button v-if="!modify" @click="canModify" type="button" class="btn btn-default">修改资料</button>
+                                    <button v-if="modify" type="submit" class="btn btn-default">提交</button>
+                                </div>
+                                {% endif %}
+                            </form>
+                        </div>
+                        {% if can_edit %}
+                        <div role="tabpanel" class="col-md-8 tab-pane fade" :class="{ 'active': show, 'in': show }" id="pwd">
+                            <form @submit="submit($event)" class="form-horizontal" style="padding: 50px 0 0 0;">
+                                <div v-if='showError' class="form-group alert alert-danger" role="alert">
+                                    ${ info }
+                                </div>
+                                <div class="form-group has-feedback" :class="{ 'has-success': isSuccess }">
+                                    <label for="inputPassword1" class="col-sm-2 control-label">旧密码</label>
+                                    <div class="col-sm-10">
+                                        <input v-model="oldPassword" type="password" class="form-control" id="inputPassword1" placeholder="旧密码" required>
+                                        <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                                    </div>
+                                </div>
+                                <div class="form-group has-feedback" :class="{ 'has-success': isSuccess }">
+                                    <label for="inputPassword2" class="col-sm-2 control-label">新密码</label>
+                                    <div class="col-sm-10">
+                                        <input v-model="password" type="password" class="form-control" id="inputPassword2" placeholder="新密码" required>
+                                        <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                                    </div>
+                                </div>
+                                <div class="form-group has-feedback" :class="{ 'has-success': isSuccess }">
+                                    <label for="inputPassword3" class="col-sm-2 control-label">确认新密码</label>
+                                    <div class="col-sm-10">
+                                        <input v-model="password2" type="password" class="form-control" id="inputPassword3" placeholder="确认新密码" required>
+                                        <span class="form-control-feedback" :class="{ 'icon-checkmark': isSuccess }"></span>
+                                    </div>
+                                </div>
+                                <p style="padding: 0 0 0 540px;font-size: 15px">#密码修改完成后请重新登陆</p>
+                                <hr>
+                                <div style="padding: 20px 0 0 610px">
+                                    <button type="submit" class="btn btn-default">更改密码</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div role="tabpanel" class="col-md-8 tab-pane fade" :class="{ 'active': show, 'in': show }" id="avatar">
+                            <form @submit="submit($event)" class="form-horizontal" style="padding: 50px 0 0 0;">
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">当前头像</label>
+                                    <div class="col-sm-10">
+                                        <p class="form-control-static"><img class="img-circle" src="{{ user.avatar.url }}" height="150" width="150"></p>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="padding: 50px 0 0 0;">
+                                    <label for="inputAvatar" class="col-sm-2 control-label">上传新头像</label>
+                                    <div class="col-sm-10">
+                                        <input @change='getFile($event)' id="inputAvatar" type="file" accept="image/jpeg,image/gif,image/png">
+                                    </div>
+                                </div>
+                                <hr>
+                                <div style="padding: 20px 0 0 610px">
+                                    <button type="submit" class="btn btn-default">上传</button>
+                                </div>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main %}
+
+
+{% block footer %}
+<footer id="gtco-footer" role="contentinfo">
+    <div class="container">
+        <div class="row copyright-sm">
+            <div class="col-md-12 text-center">
+                <p class="block"><a href="http://www.miitbeian.gov.cn">苏ICP备 17032073号-1</a>. All rights reserved.</p>
+                <ul class="gtco-social-icons">
+                    <li><a href="https://github.com/ShiveryMoon"><i class="icon-github"></i></a></li>
+                    <li><a href="https://www.w3.org/TR/html5/"><i class="icon-html-five"></i></a></li>
+                    <li><a href="https://steamcommunity.com/id/shiverymoon/"><i class="icon-steam2"></i></a></li>
+                    <li><a href="#"><i class="icon-sina-weibo"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock footer %}

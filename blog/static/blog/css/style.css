@@ -342,11 +342,11 @@ h1, h2, h3, h4, h5, h6, figure {
   }
 }
 .gtco-cover.gtco-cover-sm {
-  height: 600px;
+  height: 450px;
 }
 @media screen and (max-width: 768px) {
   .gtco-cover.gtco-cover-sm {
-    height: 400px;
+    height: 300px;
   }
 }
 .gtco-cover.gtco-cover-sm .display-t,
@@ -449,7 +449,7 @@ article a img {
   transition: 0.5s;
 }
 article a:hover img {
-  opacity: .4;
+  opacity: .6;
 }
 article figure {
   margin-bottom: 30px;
@@ -494,7 +494,16 @@ article .content-article {
   padding-top: 1em;
 }
 article .content-article a {
-  text-decoration: underline;
+  opacity: 1;
+  -webkit-transition: 0.5s;
+  -o-transition: 0.5s;
+  transition: 0.5s;
+}
+article .content-article a:hover {
+  opacity: .6;
+}
+article .content-article a {
+  text-decoration: none;
 }
 article .content-article blockquote {
   border-left: none;
@@ -528,6 +537,10 @@ article .gtco-highlight.right {
 article .gtco-highlight.left {
   float: left;
 }
+article .gtco-highlight .topic {
+  text-align:center;
+  font-size: 17px;
+}
 article .gtco-highlight h4 {
   font-size: 14px;
   letter-spacing: 2px;
@@ -535,11 +548,26 @@ article .gtco-highlight h4 {
   text-transform: uppercase;
   font-family: "Roboto Mono", serif;
 }
-article .gtco-highlight p {
-  font-family: "Crimson Text", Arial, sans-serif;
-  font-style: italic;
+article .gtco-highlight h5 {
   color: #000;
-  font-size: 20px;
+  font-size: 25px;
+  text-align:center;
+  padding : 30px 0 0 0;
+  color: #6495ED;
+}
+article .gtco-highlight h5 {
+  opacity: 1;
+  -webkit-transition: 0.5s;
+  -o-transition: 0.5s;
+  transition: 0.5s;
+}
+article .gtco-highlight h5:hover {
+  opacity: .6;
+}
+article .gtco-highlight p {
+  color: #aeaeae;
+  font-size: 15px;
+  text-align:center;
 }
 
 figure figcaption {
@@ -1673,6 +1701,9 @@ figure figcaption {
 #gtco-footer .copyright {
   margin-top: 50px;
 }
+#gtco-footer .copyright-sm {
+  margin-top: 1px;
+}
 #gtco-footer .copyright .block {
   display: block;
 }
@@ -2087,12 +2118,19 @@ figure figcaption {
   margin-bottom: 30px !important;
 }
 
+.row-pb-lg {
+  padding-bottom: 8em !important;
+}
+
 .row-pb-md {
   padding-bottom: 4em !important;
 }
 
 .row-pb-sm {
   padding-bottom: 2em !important;
+}
+.row-pb-sm h3 {
+  padding: 30px 0 30px 0;
 }
 
 .gtco-loader {
@@ -2119,5 +2157,4 @@ figure figcaption {
   border-top-left-radius: 0px !important;
   border-bottom-left-radius: 0px !important;
 }
-
 /*# sourceMappingURL=style.css.map */

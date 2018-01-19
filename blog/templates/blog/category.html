@@ -5,16 +5,15 @@
 
 
 {% block header %}
-<header id="gtco-header" class="gtco-cover" role="banner" data-stellar-background-ratio="0.5" style="background-image: url({{ blogList.0.picture }});">
+<header id="gtco-header" class="gtco-cover" role="banner" data-stellar-background-ratio="0.5" style="background-image: url('/static/blog/images/default/{{ category }}.jpg');">
     <div class="overlay"></div>
     <div class="container">
         <div class="row">
             <div class="col-md-7 text-left">
                 <div class="display-t">
                     <div class="display-tc animate-box" data-animate-effect="fadeInUp">
-                        <span class="date-post">{{ blogList.0.pub_date }}</span>
-                        <h1 class="mb30"><a href="{% url 'blog:blog' blogList.0.id %}">{{ blogList.0.title }}</a></h1>
-                        <p><a href="{% url 'blog:blog' blogList.0.id %}" class="text-link">Read More</a></p>
+                        <span class="date-post">Category</span>
+                        <h1 class="mb30"><a href="{% url 'blog:category' category %}">{{ category|capfirst }}</a></h1>
                     </div>
                 </div>
             </div>
