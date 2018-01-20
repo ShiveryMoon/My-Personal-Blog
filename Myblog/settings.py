@@ -21,12 +21,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'p_=9(f*9n$gunu-l2!o^1!@3u!imyjorohrm^k7c+^vd4y@h9&'
+SECRET_KEY = ?
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['?']
 
 
 # Application definition
@@ -78,15 +78,7 @@ WSGI_APPLICATION = 'Myblog.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'myblog',
-		'USER': 'root',
-		'PASSWORD': 'password',
-		'HOST' : '127.0.0.1'
-    }
-}
+DATABASES = ?
 
 
 # Password validation
@@ -129,6 +121,6 @@ STATIC_URL = '/static/'
 
 MEDIA_URL = '/static/blog/images/'
 
-MEDIA_ROOT = 'D:/计算机学习/Myblog/blog/static/blog/images/' #部署时记得改！
+MEDIA_ROOT = 'path/to/Myblog/blog/static/blog/images/' ?????
 
 LOGIN_URL = '/admin/login/'
